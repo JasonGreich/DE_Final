@@ -33,3 +33,28 @@ It never needs the real dataset, so it runs in under a second.
 
 **BOM note (added after the first real run).** `product_category_name_translation.csv` starts with a hidden
 byte-order mark (BOM). We open files with `utf-8-sig`, which silently removes it, so the header check still passes.
+
+## Stage 1
+
+### src/profile.py
+**What it does.** Looks at every source before we build anything and writes the result to `docs/profiling.md` (and prints it).
+Run with `python -m src.profile`; it takes about 10 seconds.
+
+**How it works.**
+- For every Olist table it counts rows, lists columns with their types and null counts, counts duplicate keys, and shows min/max of the date columns
+  (and how many dates are not in `YYYY-MM-DD HH:MM:SS` format).
+- Then one function per quirk named in CLAUDE.md (`quirks_products`, `quirks_orders`, `quirks_items`, `quirks_reviews`, `quirks_geolocation`, `quirks_keys`), each a few SQL counts.
+- `profile_holidays` and `profile_rates` call the two APIs once (30 s timeout, honest User-Agent, 3 tries with growing waits), save the response
+  untouched in `data/raw/profiling/` (git-ignored) and describe it.
+
+**Choices to explain.**
+- Plain SQL on SQLite, no cleverness: each number in the report is one query you can read.
+- Checks like "orders with no review" use `NOT IN (SELECT ...)`. The first version used `NOT EXISTS` and ran for over six minutes, because the
+  lookup column had no index so SQLite scanned the whole table for every row. `NOT IN` makes SQLite build a temporary index; it now takes seconds.
+- This script is only for looking. The polite extractors that feed the pipeline are written in stage 2.
+
+**If asked "why profile first?"** The business rules depend on facts we only know from the data: for example the estimate is always midnight
+(so we compare dates), and 14% of items belong to multi-item orders (so rates must be per order).
+
+### docs/decisions.md
+Records the dbt spike verdict (SQLite works, keep it), how we call Frankfurter, and why holidays are filtered on `global` and not on type.
