@@ -170,3 +170,11 @@ Row count plus the sum of a hash of every row: the same table in a different ord
 
 ### tests/test_pipeline.py
 Runs the whole pipeline (including dbt) on 60 invented orders with the two APIs replaced by files: about 10 s per run.
+
+## Stage 6: dashboard/app.py
+- `read` opens the warehouse read-only and runs one SELECT on a view. `where_clause` turns the three order-level controls (state, year, Carnival) into a WHERE with parameters (never string-pasted values).
+- Each view stores order counts per group; the app sums counts after filtering and divides once. **Why:** averaging pre-computed rates would weight small groups wrongly.
+- Four callbacks share the same four inputs: header cards, chart 1 (distance and freight bands), chart 2 (seller share of late orders per route, heatmap), chart 3 (review score and revenue by category).
+- The minimum-orders slider drops bars, routes or categories with too few orders. An empty result shows a message instead of an error.
+- `DEFAULT_STATE` / `DEFAULT_YEAR` environment variables only set the starting values of the dropdowns (used for the screenshot).
+**If asked "why a heatmap for chart 2?"** Routes are a state-by-state grid, and the share of seller-caused delay is one number per cell.
