@@ -152,3 +152,21 @@ Python (stages 2-3) extracts, quarantines and stages. dbt starts from the `stg_`
 - `vw_chart_*`: one view per dashboard chart, using `count(distinct order_id)`. They keep order-level columns (state, year, holiday flags) so the dashboard can filter and then add counts up. **Why add counts, not average rates:** an average of rates would weight small groups wrongly.
 - Tests: unique/not_null on keys, relationships to every dimension (three date keys to `dim_date`), accepted_values (delay cause: error; order status: warn), plus SQL tests: grain unique, late only when delivered, rate per order equals a recomputation from `raw_orders`, late <= delivered, FX range (warn).
 **If asked "why dbt for this?"** The SQL is declarative, tests live next to the models in YAML, and `ref()` gives the build order for free. Quarantine stays in Python because moving rows with reasons is easier to test there.
+
+## Stage 5: run_pipeline, run_log, idempotency
+
+### run_pipeline.py
+One command, five steps: make sure the store DB exists; extract (Olist, holidays, rates); stage + data tests + quarantine; `dbt build`; load checks (fact rows = staged items, dims = staged dims, orders in `vw_order_late` = in-scope orders).
+- Everything printed also goes to `logs/pipeline_<timestamp>.log` (the `Tee` class).
+- `finally:` always writes the `run_log` row, so a failed run is recorded. Exit code 0 ok, 2 stop test, 1 anything else.
+- `--data-dir` lets tests run the same code on a temporary folder.
+**If asked "why is it idempotent?"** Extraction upserts by key; staging and dbt drop and recreate their tables from the same inputs; the proof compares checksums.
+
+### src/load/run_log.py and load_warehouse.py
+`run_log` has one row per run (run_id, start, end, rows extracted/loaded/quarantined, tests passed/warned/failed, status, error). It only grows, so it is not in the checksums. `run_dbt` calls dbt as a subprocess with the warehouse path in an environment variable; `load_checks` compares the marts with staging.
+
+### src/load/checksums.py
+Row count plus the sum of a hash of every row: the same table in a different order gives the same number. `run_id` and `quarantined_at` are ignored because they change on every run on purpose.
+
+### tests/test_pipeline.py
+Runs the whole pipeline (including dbt) on 60 invented orders with the two APIs replaced by files: about 10 s per run.

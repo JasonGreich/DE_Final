@@ -16,13 +16,19 @@ def row_hash(row):
     return int(hashlib.sha256(text.encode("utf-8")).hexdigest()[:15], 16)
 
 
+# These columns change on every run by design, so they are left out of the checksum.
+RUN_COLUMNS = ("run_id", "quarantined_at")
+
+
 def table_checksum(conn, table):
-    """(row count, sum of row hashes modulo 2**61) for one table."""
+    """(row count, sum of row hashes modulo 2**61) for one table, ignoring the per-run columns."""
     count = 0
     total = 0
-    for row in conn.execute(f"SELECT * FROM {table}"):
+    cursor = conn.execute(f"SELECT * FROM {table}")
+    keep = [i for i, col in enumerate(cursor.description) if col[0] not in RUN_COLUMNS]
+    for row in cursor:
         count += 1
-        total += row_hash(row)
+        total += row_hash([row[i] for i in keep])
     return count, total % (2 ** 61)
 
 

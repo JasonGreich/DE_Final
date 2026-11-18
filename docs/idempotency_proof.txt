@@ -1,0 +1,30 @@
+Idempotency proof, generated 2026-11-18T13:41:34+00:00
+Two consecutive `run_pipeline.py --full` runs on the same input.
+Checksum = sum of a hash of every row (order-independent); run_id and quarantined_at are ignored.
+
+table                       rows run 1  rows run 2        checksum run 1        checksum run 2  same
+dim_date                           852         852    212120989008378904    212120989008378904  YES
+dim_product                     32,951      32,951    980276541938155439    980276541938155439  YES
+dim_seller                       3,095       3,095    191779793064419567    191779793064419567  YES
+dim_customer                    99,441      99,441   1792202995327121190   1792202995327121190  YES
+fact_order_item                112,642     112,642   1735566183611183761   1735566183611183761  YES
+stg_orders                      99,433      99,433    991375794345418147    991375794345418147  YES
+stg_order_items                112,642     112,642     64992831778396506     64992831778396506  YES
+stg_order_reviews               98,665      98,665    272259783076465331    272259783076465331  YES
+stg_customers                   99,441      99,441    207050078347785949    207050078347785949  YES
+stg_sellers                      3,095       3,095    845712877860679123    845712877860679123  YES
+stg_products                    32,951      32,951   1570902370352320034   1570902370352320034  YES
+stg_geolocation                 19,010      19,010    969716812253030681    969716812253030681  YES
+stg_holidays                        39          39    264070236707221492    264070236707221492  YES
+stg_fx_rates                       768         768   2000442373866878668   2000442373866878668  YES
+quarantine_orders                    8           8    554078670563190290    554078670563190290  YES
+quarantine_order_items               8           8   1262126947029336070   1262126947029336070  YES
+quarantine_order_reviews           559         559   1362501750027555035   1362501750027555035  YES
+quarantine_geolocation              42          42   1767963683974720466   1767963683974720466  YES
+quarantine_holidays                  3           3   1839816524055533460   1839816524055533460  YES
+
+run_log rows for the two runs:
+  20261118T134007Z  success  extracted=1,447,775 loaded=1,447,155 quarantined=620 tests passed/warned/failed=15/0/0 duration=40.1s
+  20261118T134052Z  success  extracted=1,447,775 loaded=1,447,155 quarantined=620 tests passed/warned/failed=15/0/0 duration=37.6s
+
+RESULT: IDENTICAL - the second run changed nothing.
