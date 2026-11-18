@@ -58,3 +58,48 @@ Run with `python -m src.profile`; it takes about 10 seconds.
 
 ### docs/decisions.md
 Records the dbt spike verdict (SQLite works, keep it), how we call Frankfurter, and why holidays are filtered on `global` and not on type.
+
+## Stage 2
+
+### src/extract/watermark.py
+**What it does.** Decides where an incremental extraction starts, and stores the "watermark" (newest purchase timestamp seen) in the `extract_state` table.
+- `overlap_start(watermark)`: watermark minus 60 days, or `None` on the first run (meaning "everything").
+- `next_watermark(old, newest_seen)`: the larger of the two, so the watermark never moves backwards.
+- `parse_as_of(text)`: checks `--as-of` is a real `YYYY-MM-DD` date.
+- `get_watermark` / `save_watermark`: one row per source in `extract_state` (source, watermark, updated_at).
+
+**Why 60 days.** An order changes after it is placed (status, delivery date). Re-reading the last 60 days lets us pick those changes up.
+**Honest limit to say if asked:** an order older than the window is not refreshed on a normal run (a test shows this); `--full` refreshes everything.
+
+### src/extract/olist.py
+**What it does.** One run: choose the orders (all, or purchased since watermark - 60 days, and not after `--as-of`), read them with SQL plus their items and reviews,
+read the five dimension tables in full, save each as a timestamped CSV in `data/raw/`, copy the rows into `raw_*` tables in the warehouse, move the watermark, write manifest lines.
+
+**Key functions.**
+- `orders_filter` / `select_sql`: build the SQL. Items and reviews are selected by "order_id is in the window", so they always follow their orders.
+- `copy_table`: reads in batches of 10,000, writes the CSV and inserts into `raw_<table>` at the same time (so the 1M-row geolocation table never sits in memory).
+- `run_extract`: the whole run inside one warehouse transaction. If anything fails it rolls back, so a failed run changes nothing. Manifest lines are written only after the commit.
+
+**Choices to explain.**
+- *Update by key:* `raw_orders` has `order_id` as primary key and uses `INSERT OR REPLACE`, so a re-read order replaces the old row. For items and reviews we delete the window orders' rows first and insert again, so an item removed in the store also disappears.
+- *Store is opened read-only:* extraction must never change the source system.
+- *CSV, not Parquet:* no extra library, readable in a text editor, values exactly as the store gave them. Cost: bigger files and NULL becomes an empty field.
+- *`--full`* ignores the watermark, empties the order tables and reloads. *`--as-of`* caps the purchase date, so we can demo two runs (2017-06-30, then everything).
+- *`raw_` tables:* the CSV files are snapshots (one per run). Staging (stage 3) needs one current row per key, so we keep that in `raw_*` tables. This prefix is not in CLAUDE.md; see the deviations in the stage 2 summary.
+
+### src/extract/manifest.py
+Appends one JSON line per extraction to `data/raw/manifest.jsonl`: source, URL or SQL (with the real parameter values), time, record count, file, plus extras (watermark before, window start, as_of, full). JSONL so we only ever append.
+
+### src/extract/http.py
+One shared `http_get` for both APIs. Honest User-Agent, 30 s timeout, retries with waits of 2, 4, 8 s for timeouts, connection errors, HTTP 429 and 5xx (it obeys `Retry-After`). Other HTTP errors (400, 404) stop immediately with a clear message because retrying cannot fix them. This file is not in the CLAUDE.md layout; it exists so the retry logic is written once.
+
+### src/extract/nager.py
+One call per year 2016 to 2018. Each response is saved byte-for-byte and gets a manifest line. An empty or non-JSON answer is an error. No filtering here: dropping the Sao Paulo state holiday happens in staging.
+
+### src/extract/frankfurter.py
+One call for BRL to USD, `providers=ecb`, 2016-01-01 to 2018-12-31. The response is saved untouched. `check_coverage` raises an error if the data does not reach both ends of the range (a truncated answer must not look like success). Weekend gaps are not filled here.
+
+### Tests (tests/test_extract_olist.py, tests/test_extract_apis.py)
+- Pure: overlap window, watermark never goes backwards, `--as-of` validation.
+- Integration on a tiny 5-order store: second run does not duplicate; a changed order is updated and the row count stays the same; an order outside the window is not refreshed (until `--full`); a removed item disappears; `--as-of` run followed by a full catch-up gives no duplicates; the raw CSV matches the store; manifest lines are written.
+- APIs with fake responses (no network): User-Agent and timeout, backoff waits, `Retry-After`, no retry on 404, give-up message, untouched bytes, truncated rates rejected.
