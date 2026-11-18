@@ -1,0 +1,13 @@
+# Pinned to the versions that installed together on Python 3.13 (Windows).
+pandas==3.1.1
+requests==2.34.2
+python-dotenv==1.2.4
+dash==4.5.0
+plotly==7.1.0
+pytest==9.2.0
+kaggle==2.2.5
+# kaggle 2.2.5 imports six but does not declare it, so we list it here.
+six==1.17.0
+dbt-core==1.11.17
+# community-maintained adapter; stage 1 decides whether it is good enough
+dbt-sqlite==1.10.0

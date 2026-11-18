@@ -1,0 +1,17 @@
+# secrets
+.env
+# data (Olist is CC BY-NC-SA: never commit it)
+data/
+# python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+# logs
+logs/
+# local scratch
+/olist_*.csv

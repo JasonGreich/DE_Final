@@ -1,0 +1,1 @@
+-- Warehouse DDL (stage 5).
