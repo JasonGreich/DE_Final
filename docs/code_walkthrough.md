@@ -178,3 +178,11 @@ Runs the whole pipeline (including dbt) on 60 invented orders with the two APIs 
 - The minimum-orders slider drops bars, routes or categories with too few orders. An empty result shows a message instead of an error.
 - `DEFAULT_STATE` / `DEFAULT_YEAR` environment variables only set the starting values of the dropdowns (used for the screenshot).
 **If asked "why a heatmap for chart 2?"** Routes are a state-by-state grid, and the share of seller-caused delay is one number per cell.
+
+## Stage 7: CI and schedule
+- `ci.yml`: on push and pull request, checkout, Python 3.13 with pip cache, `pip install -r requirements.txt`, `python -m pytest -q`. The tests include a small end-to-end pipeline run on invented data (no secrets, no real Olist files).
+- `schedule.yml`: `cron: "0 5 * * *"` (daily 05:00 UTC) plus `workflow_dispatch` (manual button). The Kaggle credentials come from `secrets.*` into environment variables, which GitHub masks in logs; the pipeline downloads the data, runs, prints `run_log`, and uploads `warehouse.db` and `logs/` as an artifact (`if: always()` so a failed run still uploads its log).
+**If asked "what does a scheduled run do on static data?"** It re-runs idempotently and writes a `run_log` row; the data does not change.
+
+## Stage 8: src/report_numbers.py
+Reads the warehouse (read-only) and writes `docs/report_numbers.json`: per-source counts, quarantine reasons, joins, test results, rates per order and per item, rankings with minimum volumes, distance bands, seller-vs-carrier shares, review scores, revenue on late orders, holiday effects (with and without Carnival), last two run times. **Why a script:** the report numbers can be regenerated after any run instead of being copied by hand.

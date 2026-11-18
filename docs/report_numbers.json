@@ -1,0 +1,945 @@
+{
+  "generated_at": "2026-11-18T13:47:13+00:00",
+  "sources": {
+    "orders": {
+      "extracted": 99441,
+      "staged": 99433,
+      "quarantined": 8,
+      "quarantined_by_reason": {
+        "delivered_without_delivery_date": 8
+      },
+      "loaded_to_marts": null,
+      "out_of_scope": 2963,
+      "out_of_scope_by_status": {
+        "approved": 2,
+        "canceled": 625,
+        "created": 5,
+        "invoiced": 314,
+        "processing": 301,
+        "shipped": 1107,
+        "unavailable": 609
+      }
+    },
+    "order_items": {
+      "extracted": 112650,
+      "staged": 112642,
+      "quarantined": 8,
+      "quarantined_by_reason": {
+        "parent_order_quarantined": 8
+      },
+      "loaded_to_marts": 112642
+    },
+    "order_reviews": {
+      "extracted": 99224,
+      "staged": 98665,
+      "quarantined": 559,
+      "quarantined_by_reason": {
+        "parent_order_quarantined": 8,
+        "superseded_by_later_review_for_same_order": 551
+      },
+      "loaded_to_marts": null
+    },
+    "customers": {
+      "extracted": 99441,
+      "staged": 99441,
+      "quarantined": 0,
+      "quarantined_by_reason": {},
+      "loaded_to_marts": 99441
+    },
+    "sellers": {
+      "extracted": 3095,
+      "staged": 3095,
+      "quarantined": 0,
+      "quarantined_by_reason": {},
+      "loaded_to_marts": 3095
+    },
+    "products": {
+      "extracted": 32951,
+      "staged": 32951,
+      "quarantined": 0,
+      "quarantined_by_reason": {},
+      "loaded_to_marts": 32951
+    },
+    "geolocation": {
+      "extracted": 1000163,
+      "staged": 1000121,
+      "quarantined": 42,
+      "quarantined_by_reason": {
+        "coordinates_outside_brazil": 42
+      },
+      "loaded_to_marts": null,
+      "staged_zip_centroids": 19010
+    },
+    "holidays": {
+      "extracted": 42,
+      "staged": 39,
+      "quarantined": 3,
+      "quarantined_by_reason": {
+        "not_national_global_false": 3
+      },
+      "loaded_to_marts": null
+    },
+    "fx_rates": {
+      "extracted": 768,
+      "staged": 768,
+      "quarantined": 0,
+      "quarantined_by_reason": {},
+      "loaded_to_marts": null
+    }
+  },
+  "joins_latest_run": [
+    {
+      "join_name": "stg_customers -> stg_geolocation",
+      "relationship": "m:1",
+      "left_rows": 99441,
+      "rows_after": 99441
+    },
+    {
+      "join_name": "stg_sellers -> stg_geolocation",
+      "relationship": "m:1",
+      "left_rows": 3095,
+      "rows_after": 3095
+    },
+    {
+      "join_name": "stg_products -> category translation",
+      "relationship": "m:1",
+      "left_rows": 32951,
+      "rows_after": 32951
+    },
+    {
+      "join_name": "stg_orders -> stg_customers",
+      "relationship": "1:1",
+      "left_rows": 99433,
+      "rows_after": 99433
+    },
+    {
+      "join_name": "stg_order_items -> stg_orders",
+      "relationship": "m:1",
+      "left_rows": 112642,
+      "rows_after": 112642
+    },
+    {
+      "join_name": "stg_order_items -> stg_sellers",
+      "relationship": "m:1",
+      "left_rows": 112642,
+      "rows_after": 112642
+    },
+    {
+      "join_name": "stg_order_items -> stg_customers",
+      "relationship": "m:1",
+      "left_rows": 112642,
+      "rows_after": 112642
+    }
+  ],
+  "data_tests_latest_run": [
+    {
+      "test_no": 1,
+      "test": "orders.order_id unique",
+      "severity": "stop",
+      "status": "pass",
+      "rows_checked": 99441,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 2,
+      "test": "orders.order_purchase_timestamp not null and parseable",
+      "severity": "stop",
+      "status": "pass",
+      "rows_checked": 99441,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 3,
+      "test": "order_items.order_id exists in orders",
+      "severity": "stop",
+      "status": "pass",
+      "rows_checked": 112650,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 4,
+      "test": "order_items.seller_id exists in sellers",
+      "severity": "quarantine",
+      "status": "pass",
+      "rows_checked": 112650,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 5,
+      "test": "order_items.product_id exists in products",
+      "severity": "quarantine",
+      "status": "pass",
+      "rows_checked": 112650,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 6,
+      "test": "orders.order_status in the 8 known values",
+      "severity": "warn",
+      "status": "pass",
+      "rows_checked": 99441,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 7,
+      "test": "delivered orders have a delivery date",
+      "severity": "quarantine",
+      "status": "quarantined",
+      "rows_checked": 96478,
+      "rows_failed": 8
+    },
+    {
+      "test_no": 8,
+      "test": "delivery date not before purchase date",
+      "severity": "quarantine",
+      "status": "pass",
+      "rows_checked": 96476,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 9,
+      "test": "price >= 0 and freight_value >= 0",
+      "severity": "quarantine",
+      "status": "pass",
+      "rows_checked": 112650,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 10,
+      "test": "reviews: score 1-5 and order exists",
+      "severity": "quarantine",
+      "status": "pass",
+      "rows_checked": 99224,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 11,
+      "test": "BRL/USD rate in range, no gap over 5 days",
+      "severity": "warn",
+      "status": "pass",
+      "rows_checked": 768,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 12,
+      "test": "holidays (date, name) unique",
+      "severity": "warn",
+      "status": "pass",
+      "rows_checked": 42,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 13,
+      "test": "orders extracted >= 90,000 on a full run",
+      "severity": "stop",
+      "status": "pass",
+      "rows_checked": 99441,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 14,
+      "test": "late orders <= delivered, per-order rate = raw recomputation",
+      "severity": "stop",
+      "status": "pass",
+      "rows_checked": 96470,
+      "rows_failed": 0
+    },
+    {
+      "test_no": 15,
+      "test": "geolocation coordinates inside Brazil",
+      "severity": "quarantine",
+      "status": "quarantined",
+      "rows_checked": 1000163,
+      "rows_failed": 42
+    }
+  ],
+  "warehouse_rows": {
+    "dim_date": 852,
+    "dim_product": 32951,
+    "dim_seller": 3095,
+    "dim_customer": 99441,
+    "fact_order_item": 112642
+  },
+  "late_rate": {
+    "per_order": {
+      "orders_in_scope": 96470,
+      "late_orders": 6534,
+      "late_rate": 0.067731
+    },
+    "per_item_wrong": {
+      "items_in_scope": 110189,
+      "late_items": 7264,
+      "late_rate": 0.065923
+    },
+    "by_customer_region": [
+      {
+        "region": "Northeast",
+        "orders": 9044,
+        "late_orders": 1150,
+        "late_rate": 0.127156
+      },
+      {
+        "region": "North",
+        "orders": 1796,
+        "late_orders": 154,
+        "late_rate": 0.085746
+      },
+      {
+        "region": "Central-West",
+        "orders": 5624,
+        "late_orders": 367,
+        "late_rate": 0.065256
+      },
+      {
+        "region": "Southeast",
+        "orders": 66193,
+        "late_orders": 4048,
+        "late_rate": 0.061155
+      },
+      {
+        "region": "South",
+        "orders": 13813,
+        "late_orders": 815,
+        "late_rate": 0.059002
+      }
+    ],
+    "by_year": [
+      {
+        "year": 2016,
+        "orders": 267,
+        "late_orders": 3,
+        "late_rate": 0.011236
+      },
+      {
+        "year": 2017,
+        "orders": 43426,
+        "late_orders": 2453,
+        "late_rate": 0.056487
+      },
+      {
+        "year": 2018,
+        "orders": 52777,
+        "late_orders": 4078,
+        "late_rate": 0.077269
+      }
+    ]
+  },
+  "top_categories_by_late_rate": [
+    {
+      "key": "audio",
+      "orders": 348,
+      "late_orders": 41,
+      "late_rate": 0.117816
+    },
+    {
+      "key": "home_confort",
+      "orders": 392,
+      "late_orders": 37,
+      "late_rate": 0.094388
+    },
+    {
+      "key": "fashion_underwear_beach",
+      "orders": 117,
+      "late_orders": 11,
+      "late_rate": 0.094017
+    },
+    {
+      "key": "books_technical",
+      "orders": 256,
+      "late_orders": 21,
+      "late_rate": 0.082031
+    },
+    {
+      "key": "office_furniture",
+      "orders": 1254,
+      "late_orders": 101,
+      "late_rate": 0.080542
+    },
+    {
+      "key": "baby",
+      "orders": 2809,
+      "late_orders": 226,
+      "late_rate": 0.080456
+    },
+    {
+      "key": "christmas_supplies",
+      "orders": 125,
+      "late_orders": 10,
+      "late_rate": 0.08
+    },
+    {
+      "key": "electronics",
+      "orders": 2517,
+      "late_orders": 192,
+      "late_rate": 0.076281
+    },
+    {
+      "key": "musical_instruments",
+      "orders": 611,
+      "late_orders": 46,
+      "late_rate": 0.075286
+    },
+    {
+      "key": "health_beauty",
+      "orders": 8647,
+      "late_orders": 649,
+      "late_rate": 0.075055
+    }
+  ],
+  "top_sellers_by_late_rate": [
+    {
+      "key": "54965bbe3e4f07ae045b90b0b8541f52",
+      "orders": 73,
+      "late_orders": 22,
+      "late_rate": 0.30137
+    },
+    {
+      "key": "beadbee30901a7f61d031b6b686095ad",
+      "orders": 64,
+      "late_orders": 15,
+      "late_rate": 0.234375
+    },
+    {
+      "key": "a49928bcdf77c55c6d6e05e09a9b4ca5",
+      "orders": 96,
+      "late_orders": 21,
+      "late_rate": 0.21875
+    },
+    {
+      "key": "712e6ed8aa4aa1fa65dab41fed5737e4",
+      "orders": 77,
+      "late_orders": 16,
+      "late_rate": 0.207792
+    },
+    {
+      "key": "06a2c3af7b3aee5d69171b0e14f0ee87",
+      "orders": 389,
+      "late_orders": 74,
+      "late_rate": 0.190231
+    },
+    {
+      "key": "002100f778ceb8431b7a1020ff7ab48f",
+      "orders": 50,
+      "late_orders": 9,
+      "late_rate": 0.18
+    },
+    {
+      "key": "ea566164622c6b439516ab18062c42cd",
+      "orders": 50,
+      "late_orders": 9,
+      "late_rate": 0.18
+    },
+    {
+      "key": "cac4c8e7b1ca6252d8f20b2fc1a2e4af",
+      "orders": 74,
+      "late_orders": 13,
+      "late_rate": 0.175676
+    },
+    {
+      "key": "6039e27294dc75811c0d8a39069f52c0",
+      "orders": 63,
+      "late_orders": 11,
+      "late_rate": 0.174603
+    },
+    {
+      "key": "88460e8ebdecbfecb5f9601833981930",
+      "orders": 246,
+      "late_orders": 42,
+      "late_rate": 0.170732
+    }
+  ],
+  "top_customer_states_by_late_rate": [
+    {
+      "key": "AL",
+      "orders": 397,
+      "late_orders": 85,
+      "late_rate": 0.214106
+    },
+    {
+      "key": "MA",
+      "orders": 717,
+      "late_orders": 125,
+      "late_rate": 0.174338
+    },
+    {
+      "key": "SE",
+      "orders": 335,
+      "late_orders": 51,
+      "late_rate": 0.152239
+    },
+    {
+      "key": "PI",
+      "orders": 476,
+      "late_orders": 66,
+      "late_rate": 0.138655
+    },
+    {
+      "key": "CE",
+      "orders": 1279,
+      "late_orders": 176,
+      "late_rate": 0.137608
+    },
+    {
+      "key": "BA",
+      "orders": 3256,
+      "late_orders": 396,
+      "late_rate": 0.121622
+    },
+    {
+      "key": "RJ",
+      "orders": 12350,
+      "late_orders": 1495,
+      "late_rate": 0.121053
+    },
+    {
+      "key": "PA",
+      "orders": 946,
+      "late_orders": 106,
+      "late_rate": 0.112051
+    },
+    {
+      "key": "ES",
+      "orders": 1995,
+      "late_orders": 214,
+      "late_rate": 0.107268
+    },
+    {
+      "key": "PB",
+      "orders": 517,
+      "late_orders": 54,
+      "late_rate": 0.104449
+    }
+  ],
+  "ranking_minimums": {
+    "category_and_state_orders": 100,
+    "seller_orders": 50
+  },
+  "distance_and_freight": {
+    "distance": [
+      {
+        "band": "1: under 100 km",
+        "orders": 17996,
+        "late_orders": 796,
+        "late_rate": 0.044232
+      },
+      {
+        "band": "2: 100-500 km",
+        "orders": 37189,
+        "late_orders": 2262,
+        "late_rate": 0.060824
+      },
+      {
+        "band": "3: 500-1000 km",
+        "orders": 25898,
+        "late_orders": 1834,
+        "late_rate": 0.070816
+      },
+      {
+        "band": "4: 1000-2000 km",
+        "orders": 9785,
+        "late_orders": 925,
+        "late_rate": 0.094532
+      },
+      {
+        "band": "5: 2000 km +",
+        "orders": 5620,
+        "late_orders": 675,
+        "late_rate": 0.120107
+      }
+    ],
+    "freight": [
+      {
+        "band": "1: under 10%",
+        "orders": 15867,
+        "late_orders": 1076,
+        "late_rate": 0.067814
+      },
+      {
+        "band": "2: 10-20%",
+        "orders": 27990,
+        "late_orders": 1806,
+        "late_rate": 0.064523
+      },
+      {
+        "band": "3: 20-40%",
+        "orders": 31596,
+        "late_orders": 2137,
+        "late_rate": 0.067635
+      },
+      {
+        "band": "4: 40-80%",
+        "orders": 17252,
+        "late_orders": 1146,
+        "late_rate": 0.066427
+      },
+      {
+        "band": "5: 80% +",
+        "orders": 5553,
+        "late_orders": 414,
+        "late_rate": 0.074554
+      }
+    ],
+    "items_without_distance": 555
+  },
+  "seller_vs_carrier": {
+    "late_orders_by_cause": {
+      "carrier": 5073,
+      "seller": 1460,
+      "unknown": 1
+    },
+    "seller_share": 0.223447,
+    "carrier_share": 0.7764,
+    "routes_with_100_plus_orders_highest_seller_share": [
+      {
+        "seller_state": "MA",
+        "customer_state": "SP",
+        "late_orders": 25,
+        "seller_late": 21,
+        "carrier_late": 4,
+        "seller_share": 0.84
+      },
+      {
+        "seller_state": "RS",
+        "customer_state": "RS",
+        "late_orders": 8,
+        "seller_late": 6,
+        "carrier_late": 2,
+        "seller_share": 0.75
+      },
+      {
+        "seller_state": "PR",
+        "customer_state": "MG",
+        "late_orders": 32,
+        "seller_late": 21,
+        "carrier_late": 11,
+        "seller_share": 0.65625
+      },
+      {
+        "seller_state": "SC",
+        "customer_state": "MG",
+        "late_orders": 15,
+        "seller_late": 9,
+        "carrier_late": 6,
+        "seller_share": 0.6
+      },
+      {
+        "seller_state": "RS",
+        "customer_state": "PR",
+        "late_orders": 7,
+        "seller_late": 4,
+        "carrier_late": 3,
+        "seller_share": 0.571429
+      },
+      {
+        "seller_state": "PR",
+        "customer_state": "SP",
+        "late_orders": 90,
+        "seller_late": 45,
+        "carrier_late": 44,
+        "seller_share": 0.505618
+      },
+      {
+        "seller_state": "PE",
+        "customer_state": "SP",
+        "late_orders": 2,
+        "seller_late": 1,
+        "carrier_late": 1,
+        "seller_share": 0.5
+      },
+      {
+        "seller_state": "RS",
+        "customer_state": "SP",
+        "late_orders": 8,
+        "seller_late": 4,
+        "carrier_late": 4,
+        "seller_share": 0.5
+      },
+      {
+        "seller_state": "PR",
+        "customer_state": "PR",
+        "late_orders": 19,
+        "seller_late": 9,
+        "carrier_late": 10,
+        "seller_share": 0.473684
+      },
+      {
+        "seller_state": "RS",
+        "customer_state": "RJ",
+        "late_orders": 17,
+        "seller_late": 8,
+        "carrier_late": 9,
+        "seller_share": 0.470588
+      }
+    ],
+    "routes_with_100_plus_orders_lowest_seller_share": [
+      {
+        "seller_state": "DF",
+        "customer_state": "MG",
+        "late_orders": 1,
+        "seller_late": 0,
+        "carrier_late": 1,
+        "seller_share": 0.0
+      },
+      {
+        "seller_state": "ES",
+        "customer_state": "SP",
+        "late_orders": 8,
+        "seller_late": 0,
+        "carrier_late": 8,
+        "seller_share": 0.0
+      },
+      {
+        "seller_state": "GO",
+        "customer_state": "SP",
+        "late_orders": 2,
+        "seller_late": 0,
+        "carrier_late": 2,
+        "seller_share": 0.0
+      },
+      {
+        "seller_state": "RJ",
+        "customer_state": "ES",
+        "late_orders": 2,
+        "seller_late": 0,
+        "carrier_late": 2,
+        "seller_share": 0.0
+      },
+      {
+        "seller_state": "SC",
+        "customer_state": "PR",
+        "late_orders": 7,
+        "seller_late": 0,
+        "carrier_late": 7,
+        "seller_share": 0.0
+      },
+      {
+        "seller_state": "SC",
+        "customer_state": "RS",
+        "late_orders": 14,
+        "seller_late": 0,
+        "carrier_late": 14,
+        "seller_share": 0.0
+      },
+      {
+        "seller_state": "SP",
+        "customer_state": "RO",
+        "late_orders": 5,
+        "seller_late": 0,
+        "carrier_late": 5,
+        "seller_share": 0.0
+      },
+      {
+        "seller_state": "SP",
+        "customer_state": "AL",
+        "late_orders": 61,
+        "seller_late": 5,
+        "carrier_late": 56,
+        "seller_share": 0.081967
+      },
+      {
+        "seller_state": "RJ",
+        "customer_state": "SC",
+        "late_orders": 11,
+        "seller_late": 1,
+        "carrier_late": 10,
+        "seller_share": 0.090909
+      },
+      {
+        "seller_state": "SP",
+        "customer_state": "BA",
+        "late_orders": 297,
+        "seller_late": 27,
+        "carrier_late": 270,
+        "seller_share": 0.090909
+      }
+    ],
+    "by_holiday_in_window": [
+      {
+        "holiday_in_window": 0,
+        "seller_late": 922,
+        "carrier_late": 2926,
+        "orders": 56129
+      },
+      {
+        "holiday_in_window": 1,
+        "seller_late": 538,
+        "carrier_late": 2150,
+        "orders": 40857
+      }
+    ],
+    "note": "seller = parcel handed to the carrier after the shipping limit date; otherwise carrier. No promised transit time exists."
+  },
+  "cost_of_lateness": {
+    "review_score_late": 2.27,
+    "review_score_on_time": 4.29,
+    "review_score_difference": 2.02,
+    "revenue_on_late_orders_usd": 297482.08,
+    "revenue_on_on_time_orders_usd": 3640530.86,
+    "top_categories_by_revenue_on_late_orders": [
+      {
+        "category": "health_beauty",
+        "revenue_on_late_orders_usd": 28118.07,
+        "late_orders": 649
+      },
+      {
+        "category": "watches_gifts",
+        "revenue_on_late_orders_usd": 27400.05,
+        "late_orders": 406
+      },
+      {
+        "category": "bed_bath_table",
+        "revenue_on_late_orders_usd": 23935.74,
+        "late_orders": 689
+      },
+      {
+        "category": "sports_leisure",
+        "revenue_on_late_orders_usd": 21437.67,
+        "late_orders": 495
+      },
+      {
+        "category": "auto",
+        "revenue_on_late_orders_usd": 20164.39,
+        "late_orders": 278
+      },
+      {
+        "category": "computers_accessories",
+        "revenue_on_late_orders_usd": 18750.02,
+        "late_orders": 417
+      },
+      {
+        "category": "furniture_decor",
+        "revenue_on_late_orders_usd": 17718.1,
+        "late_orders": 449
+      },
+      {
+        "category": "cool_stuff",
+        "revenue_on_late_orders_usd": 11897.11,
+        "late_orders": 210
+      },
+      {
+        "category": "baby",
+        "revenue_on_late_orders_usd": 11495.13,
+        "late_orders": 226
+      },
+      {
+        "category": "housewares",
+        "revenue_on_late_orders_usd": 11434.22,
+        "late_orders": 308
+      }
+    ],
+    "top_sellers_by_revenue_on_late_orders": [
+      {
+        "seller_id": "4869f7a5dfa277a7dca6462dcf3b52b2",
+        "revenue_on_late_orders_usd": 7499.55,
+        "late_orders": 118
+      },
+      {
+        "seller_id": "4a3ca9315b744ce9f8e9374361493884",
+        "revenue_on_late_orders_usd": 6167.03,
+        "late_orders": 172
+      },
+      {
+        "seller_id": "b1b3948701c5c72445495bd161b83a4c",
+        "revenue_on_late_orders_usd": 5507.03,
+        "late_orders": 9
+      },
+      {
+        "seller_id": "7c67e1448b00f6e969d365cea6b010ab",
+        "revenue_on_late_orders_usd": 5026.61,
+        "late_orders": 89
+      },
+      {
+        "seller_id": "fa1c13f2614d7b5c4749cbc52fecda94",
+        "revenue_on_late_orders_usd": 4229.52,
+        "late_orders": 53
+      },
+      {
+        "seller_id": "7d13fca15225358621be4086e1eb0964",
+        "revenue_on_late_orders_usd": 4162.18,
+        "late_orders": 64
+      },
+      {
+        "seller_id": "1025f0e2d44d7041d6cf58b6550e0bfa",
+        "revenue_on_late_orders_usd": 3469.05,
+        "late_orders": 72
+      },
+      {
+        "seller_id": "da8622b14eb17ae2831f4ac5b9dab84a",
+        "revenue_on_late_orders_usd": 3375.08,
+        "late_orders": 87
+      },
+      {
+        "seller_id": "955fee9216a65b617aa5c0531780ce60",
+        "revenue_on_late_orders_usd": 2767.81,
+        "late_orders": 77
+      },
+      {
+        "seller_id": "f7ba60f8c3f99e7ee4042fdef03b70c4",
+        "revenue_on_late_orders_usd": 2740.47,
+        "late_orders": 30
+      }
+    ]
+  },
+  "holiday_effect": {
+    "holiday_in_window": {
+      "orders": 40597,
+      "late_orders": 2688,
+      "late_rate": 0.066212
+    },
+    "no_holiday_in_window": {
+      "orders": 55873,
+      "late_orders": 3846,
+      "late_rate": 0.068835
+    },
+    "carnival_in_window": {
+      "orders": 8475,
+      "late_orders": 550,
+      "late_rate": 0.064897
+    },
+    "no_carnival_in_window": {
+      "orders": 87995,
+      "late_orders": 5984,
+      "late_rate": 0.068004
+    },
+    "holiday_window_excluding_carnival_orders": {
+      "orders": 40520,
+      "late_orders": 2686,
+      "late_rate": 0.066288
+    },
+    "no_holiday_excluding_carnival_orders": {
+      "orders": 47475,
+      "late_orders": 3298,
+      "late_rate": 0.069468
+    }
+  },
+  "other_findings": {
+    "items_with_negative_transit_days": 44,
+    "orders_out_of_scope": 2963
+  },
+  "run_history_last_two": [
+    {
+      "run_id": "20261118T134007Z",
+      "mode": "full",
+      "status": "success",
+      "rows_extracted": 1447775,
+      "rows_loaded": 1447155,
+      "rows_quarantined": 620,
+      "tests_passed": 15,
+      "tests_warned": 0,
+      "tests_failed": 0,
+      "duration_seconds": 40.1
+    },
+    {
+      "run_id": "20261118T134052Z",
+      "mode": "full",
+      "status": "success",
+      "rows_extracted": 1447775,
+      "rows_loaded": 1447155,
+      "rows_quarantined": 620,
+      "tests_passed": 15,
+      "tests_warned": 0,
+      "tests_failed": 0,
+      "duration_seconds": 37.6
+    }
+  ]
+}

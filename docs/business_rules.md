@@ -50,5 +50,16 @@ When slicing by category or seller, an order counts once in each category or sel
 English category comes from the translation table. Two categories (`pc_gamer`, `portateis_cozinha_e_preparadores_de_alimentos`, 13 products) have no
 translation: they keep their Portuguese name and `category_en_is_fallback = 1`. 610 products have no category (left empty).
 
-## Money (stage 4)
-`price_usd` and `freight_usd` will use the ECB BRL/USD rate for the purchase date, forward-filled over weekends and ECB holidays.
+## Money
+`price_usd = price * rate` and `freight_usd = freight_value * rate`, with the ECB BRL/USD rate of the **purchase date**.
+ECB data has no weekend or holiday rows, so `dim_date.brl_usd_rate` is forward-filled from the last available business day.
+Example: an order bought on Saturday 2017-09-02 uses the rate of Friday 2017-09-01. Rates in the warehouse range from 0.238 to 0.329 USD per BRL.
+Revenue on late orders = sum of item prices (USD) of late orders: US$ 297,482 of US$ 3.94 million in total. It is revenue on late orders, not revenue lost.
+
+## Results on the real data (per order)
+- Late: 6,534 of 96,470 = 6.77%. Northeast 12.7%, North 8.6%, Central-West 6.5%, Southeast 6.1%, South 5.9%.
+- Distance: under 100 km 4.4%, 100-500 km 6.1%, 500-1000 km 7.1%, 1000-2000 km 9.5%, 2000 km+ 12.0%. Freight share matters little (6.4% to 7.5%).
+- Holiday window: 6.6% with a national holiday in the window vs 6.9% without. Holidays do **not** make delivery later here (carnival: 6.5% vs 6.8%).
+- Cause: 22.3% seller, 77.6% carrier, 1 unknown.
+- Review score: 2.27 on late orders vs 4.29 on time.
+All numbers (with counts and minimum volumes) are in `docs/report_numbers.json`.

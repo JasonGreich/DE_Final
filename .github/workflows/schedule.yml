@@ -1,0 +1,40 @@
+name: Scheduled pipeline run
+
+# Daily at 05:00 UTC, and on demand from the Actions tab.
+# The Olist data is static (2016-2018), so a scheduled run is an idempotent re-run:
+# it still extracts, tests, builds the marts and writes a run_log row.
+on:
+  schedule:
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    env:
+      # Repository secrets (Settings > Secrets and variables > Actions). GitHub hides their values in logs.
+      KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+      KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install requirements
+        run: pip install -r requirements.txt
+      # The runner starts empty, so the store database is downloaded from Kaggle first.
+      - name: Run the pipeline
+        run: python run_pipeline.py
+      - name: Show the run_log
+        if: always()
+        run: python -c "import sqlite3; [print(r) for r in sqlite3.connect('data/warehouse/warehouse.db').execute('select * from run_log')]"
+      - name: Upload warehouse and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pipeline-output
+          path: |
+            data/warehouse/warehouse.db
+            logs/
+          retention-days: 14

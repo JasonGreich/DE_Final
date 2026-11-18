@@ -1,0 +1,23 @@
+name: CI
+
+# Runs on every push and pull request. No secrets needed: the tests use an invented
+# fixture (tests/fixtures/synthetic.py), never the real Olist files.
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install requirements
+        run: pip install -r requirements.txt
+      # Unit tests and the small end-to-end pipeline runs (tests/test_pipeline.py: extract,
+      # stage, data tests, quarantine, dbt build, load checks, run twice) on the fixture.
+      - name: Run pytest
+        run: python -m pytest -q
