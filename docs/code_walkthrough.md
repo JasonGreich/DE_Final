@@ -103,3 +103,42 @@ One call for BRL to USD, `providers=ecb`, 2016-01-01 to 2018-12-31. The response
 - Pure: overlap window, watermark never goes backwards, `--as-of` validation.
 - Integration on a tiny 5-order store: second run does not duplicate; a changed order is updated and the row count stays the same; an order outside the window is not refreshed (until `--full`); a removed item disappears; `--as-of` run followed by a full catch-up gives no duplicates; the raw CSV matches the store; manifest lines are written.
 - APIs with fake responses (no network): User-Agent and timeout, backoff waits, `Retry-After`, no retry on 404, give-up message, untouched bytes, truncated rates rejected.
+
+## Stage 3
+
+How one run flows: load the `raw_` tables and the newest holiday/rate files -> run data tests 1-13 and 15 -> quarantine failing rows ->
+remove them -> build the `stg_` tables (every join checked) -> test 14 -> write everything in one transaction -> reconcile.
+
+### src/transform/geo.py
+- `haversine_km`: the great-circle distance formula in plain Python (earth radius 6,371 km). Tested against 1 degree of longitude on the equator (111.2 km) and Sao Paulo to Rio (about 358 km).
+- `in_brazil`: the bounding-box check from CLAUDE.md. `zip_centroids`: groups geolocation to one row per zip prefix (mean lat/lng, plus `n_points`).
+**Why:** the geolocation file has about 1M rows but only 19k zip prefixes. Joining on it raw would multiply every order item by the number of points in its zip.
+
+### src/transform/rules.py
+BR1 to BR4 as tiny functions that take plain values: `in_scope`, `days_late`, `is_late`, `holiday_in_window`, `handoff_late_days`, `transit_days`, `delay_cause`, `freight_share`, `order_late_rate`, plus the state-to-region dictionary.
+They never touch the database, so each one is tested with a handful of examples (same-day delivery, inclusive holiday ends, same-day handoff, three-item order counted once).
+**If asked "why dates, not timestamps?"** The estimate is always 00:00:00; delivered at 15:30 on the estimated day would look late if we compared timestamps.
+
+### src/quality/quarantine.py
+A `Quarantine` collector. `add(source, rows, key_cols, reason)` remembers the row, its key and the reason (a row failing twice is stored once with both reasons). `remove_from` returns a frame without quarantined rows.
+`write` rebuilds the five `quarantine_*` tables (source_table, row_key, reason, run_id, quarantined_at, raw row as JSON). They are rebuilt each run, so two runs give the same tables.
+
+### src/quality/tests.py
+The 15 tests as small functions returning (rows checked, rows failed, detail). A table (`RAW_TESTS`) lists number, name and severity.
+- stop (1, 2, 3, 13, 14): raise `StopRun`; results gathered so far are still saved.
+- quarantine (4, 5, 7, 8, 9, 10, 15): add the failing rows to the quarantine collector, continue.
+- warn (6, 11, 12): logged only.
+- Test 13 only applies to a full run (`--full`); otherwise it is recorded as `skipped`.
+- Test 14 recomputes the late rate straight from `raw_orders` with plain SQL (not using rules.py or pandas) and compares it exactly with the staged rate.
+Every test writes a row to `dq_results` (appended each run: test, severity, rows checked, rows failed, status, detail, seconds).
+
+### src/transform/staging.py
+- `checked_join`: a left join that must keep the row count and the stated relationship (`1:1` or `m:1`); otherwise the run stops. Row counts before and after go to the log and to the `join_log` table.
+- `apply_quarantine`: items and reviews of a quarantined order are quarantined too (reason `parent_order_quarantined`), so nothing is orphaned.
+- `stage_*` functions: one per table. Examples: customers/sellers get cleaned text, region and zip-centroid coordinates; products get the English category (typo columns fixed); reviews are reduced to one per order, the older ones quarantined; holidays keep national ones only; orders get BR1/BR2 flags; order items get BR3/BR4 columns.
+- `write_table` replaces a table (DROP, CREATE, INSERT). All tables are written in **one transaction**, so a failed run leaves the previous tables untouched.
+- `reconcile`: for each source, rows extracted must equal rows staged plus rows quarantined, read back from the tables just written. Out-of-scope orders are *inside* staged (kept with `in_scope = 0`), and the report shows how many. Geolocation counts the points averaged into each centroid (`n_points`).
+**If asked "why quarantine duplicate reviews instead of just dropping them?"** Rule 6 in CLAUDE.md: nothing disappears without a reason, and it keeps the reconciliation exact (99,224 = 98,665 + 559).
+
+### Tests
+`test_geo_rules.py` (rules and haversine), `test_quality.py` (every stop test aborts, quarantine keeps reason and raw row, merged reasons, warn does not stop, test 14, quarantine tables), `test_staging.py` (end to end on 4 invented orders: counts, flags, centroids, categories, reviews, holidays, running twice gives identical tables, a stop test leaves the old tables, joins that would multiply rows stop the run, reconciliation catches a silent drop).
