@@ -1,0 +1,63 @@
+version: 2
+# Tests on the marts. Severity follows CLAUDE.md: keys and relationships stop the run (error),
+# status values only warn.
+models:
+  - name: dim_date
+    columns:
+      - name: date_key
+        tests: [unique, not_null]
+      - name: date
+        tests: [unique, not_null]
+  - name: dim_product
+    columns:
+      - name: product_id
+        tests: [unique, not_null]
+  - name: dim_seller
+    columns:
+      - name: seller_id
+        tests: [unique, not_null]
+  - name: dim_customer
+    columns:
+      - name: customer_id
+        tests: [unique, not_null]
+  - name: fact_order_item
+    columns:
+      - name: order_id
+        tests: [not_null]
+      - name: order_item_id
+        tests: [not_null]
+      - name: purchase_date_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: estimated_date_key
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_date'), field: date_key}
+      - name: delivered_date_key
+        tests:
+          - relationships: {to: ref('dim_date'), field: date_key}   # null for undelivered orders: ignored
+      - name: product_id
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_product'), field: product_id}
+      - name: seller_id
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_seller'), field: seller_id}
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships: {to: ref('dim_customer'), field: customer_id}
+      - name: delay_cause
+        tests:
+          - accepted_values: {values: [seller, carrier, unknown]}   # null (not late) is ignored
+      - name: order_status
+        tests:
+          - accepted_values:
+              values: [delivered, shipped, canceled, unavailable, invoiced, processing, created, approved]
+              config: {severity: warn}
+  - name: vw_order_late
+    columns:
+      - name: order_id
+        tests: [unique, not_null]

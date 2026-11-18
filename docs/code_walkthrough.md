@@ -142,3 +142,13 @@ Every test writes a row to `dq_results` (appended each run: test, severity, rows
 
 ### Tests
 `test_geo_rules.py` (rules and haversine), `test_quality.py` (every stop test aborts, quarantine keeps reason and raw row, merged reasons, warn does not stop, test 14, quarantine tables), `test_staging.py` (end to end on 4 invented orders: counts, flags, centroids, categories, reviews, holidays, running twice gives identical tables, a stop test leaves the old tables, joins that would multiply rows stop the run, reconciliation catches a silent drop).
+
+## Stage 4: dbt
+
+Python (stages 2-3) extracts, quarantines and stages. dbt starts from the `stg_` tables and builds the star schema and the views.
+- `dim_date`: a recursive SQL query makes one row per day; holidays are joined by date; `brl_usd_rate` is the latest ECB rate on or before the day (forward fill). **Why:** this is where holidays and rates meet the fact table.
+- `fact_order_item`: one row per order item. Order-level columns (dates, holiday flags, review score) are repeated on every item, so counting rows would overcount orders.
+- `vw_order_late`: one row per in-scope order (max of is_late over its items). Every rate is `sum(is_late) / count(*)` on this view.
+- `vw_chart_*`: one view per dashboard chart, using `count(distinct order_id)`. They keep order-level columns (state, year, holiday flags) so the dashboard can filter and then add counts up. **Why add counts, not average rates:** an average of rates would weight small groups wrongly.
+- Tests: unique/not_null on keys, relationships to every dimension (three date keys to `dim_date`), accepted_values (delay cause: error; order status: warn), plus SQL tests: grain unique, late only when delivered, rate per order equals a recomputation from `raw_orders`, late <= delivered, FX range (warn).
+**If asked "why dbt for this?"** The SQL is declarative, tests live next to the models in YAML, and `ref()` gives the build order for free. Quarantine stays in Python because moving rows with reasons is easier to test there.

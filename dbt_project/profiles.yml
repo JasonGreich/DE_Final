@@ -1,0 +1,14 @@
+# dbt reads this file from this folder (run dbt with --profiles-dir .).
+# SQLite has no schemas, so the single schema "main" is mapped to the warehouse file.
+# WAREHOUSE_PATH is an absolute path set by run_pipeline.py; the default works when dbt runs inside dbt_project/.
+olist:
+  target: dev
+  outputs:
+    dev:
+      type: sqlite
+      threads: 1
+      database: warehouse
+      schema: main
+      schemas_and_paths:
+        main: "{{ env_var('WAREHOUSE_PATH', '../data/warehouse/warehouse.db') }}"
+      schema_directory: "{{ env_var('WAREHOUSE_DIR', '../data/warehouse') }}"

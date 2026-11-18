@@ -1,0 +1,21 @@
+version: 2
+# The stg_ tables are written by Python (src/transform/staging.py), after quarantine.
+# dbt starts from them and builds the star schema.
+sources:
+  - name: staging
+    schema: main
+    tables:
+      - name: stg_orders
+      - name: stg_order_items
+      - name: stg_order_reviews
+      - name: stg_customers
+      - name: stg_sellers
+      - name: stg_products
+      - name: stg_holidays
+      - name: stg_fx_rates
+      - name: raw_orders   # only used by the independent-recomputation test
+      - name: quarantine_orders
+      - name: quarantine_order_items
+      - name: quarantine_order_reviews
+      - name: quarantine_geolocation
+      - name: quarantine_holidays
