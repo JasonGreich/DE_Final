@@ -150,7 +150,7 @@ def download_from_kaggle(seed_dir):
 
 def read_csv_rows(csv_path, expected_columns):
     """Yield rows as tuples; empty fields become None. Checks the header first."""
-    with open(csv_path, newline="", encoding="utf-8") as handle:
+    with open(csv_path, newline="", encoding="utf-8-sig") as handle:  # utf-8-sig drops a BOM if present
         reader = csv.reader(handle)
         header = next(reader)
         if header != expected_columns:

@@ -88,3 +88,12 @@ def test_wrong_header_is_rejected(tmp_path):
     (tmp_path / "olist_sellers_dataset.csv").write_text("wrong,header\n1,2\n")
     with pytest.raises(ValueError):
         seed_store.build_database(tmp_path, tmp_path / "olist.db")
+
+
+def test_csv_with_bom_is_accepted(tmp_path):
+    # The real category translation CSV starts with a byte-order mark.
+    write_seed(tmp_path)
+    path = tmp_path / "product_category_name_translation.csv"
+    path.write_bytes(b"\xef\xbb\xbf" + path.read_bytes())
+    counts = seed_store.build_database(tmp_path, tmp_path / "olist.db")
+    assert counts["product_category_name_translation"] == 1

@@ -30,3 +30,6 @@ system. It reads the nine Olist CSVs and creates nine tables with types, primary
 Builds a few invented rows per table in a temp folder and checks: nine tables exist, no order item without an order,
 leading zeros and NULLs are kept, rebuilding gives identical counts, a broken foreign key is rejected, a wrong header is rejected.
 It never needs the real dataset, so it runs in under a second.
+
+**BOM note (added after the first real run).** `product_category_name_translation.csv` starts with a hidden
+byte-order mark (BOM). We open files with `utf-8-sig`, which silently removes it, so the header check still passes.
