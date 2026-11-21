@@ -43,7 +43,7 @@ Run with `python -m src.profile`; it takes about 10 seconds.
 **How it works.**
 - For every Olist table it counts rows, lists columns with their types and null counts, counts duplicate keys, and shows min/max of the date columns
   (and how many dates are not in `YYYY-MM-DD HH:MM:SS` format).
-- Then one function per quirk named in CLAUDE.md (`quirks_products`, `quirks_orders`, `quirks_items`, `quirks_reviews`, `quirks_geolocation`, `quirks_keys`), each a few SQL counts.
+- Then one function per quirk named in the project brief (`quirks_products`, `quirks_orders`, `quirks_items`, `quirks_reviews`, `quirks_geolocation`, `quirks_keys`), each a few SQL counts.
 - `profile_holidays` and `profile_rates` call the two APIs once (30 s timeout, honest User-Agent, 3 tries with growing waits), save the response
   untouched in `data/raw/profiling/` (git-ignored) and describe it.
 
@@ -85,13 +85,13 @@ read the five dimension tables in full, save each as a timestamped CSV in `data/
 - *Store is opened read-only:* extraction must never change the source system.
 - *CSV, not Parquet:* no extra library, readable in a text editor, values exactly as the store gave them. Cost: bigger files and NULL becomes an empty field.
 - *`--full`* ignores the watermark, empties the order tables and reloads. *`--as-of`* caps the purchase date, so we can demo two runs (2017-06-30, then everything).
-- *`raw_` tables:* the CSV files are snapshots (one per run). Staging (stage 3) needs one current row per key, so we keep that in `raw_*` tables. This prefix is not in CLAUDE.md; see the deviations in the stage 2 summary.
+- *`raw_` tables:* the CSV files are snapshots (one per run). Staging (stage 3) needs one current row per key, so we keep that in `raw_*` tables. This prefix is not in the project brief; it is a small addition we made for staging.
 
 ### src/extract/manifest.py
 Appends one JSON line per extraction to `data/raw/manifest.jsonl`: source, URL or SQL (with the real parameter values), time, record count, file, plus extras (watermark before, window start, as_of, full). JSONL so we only ever append.
 
 ### src/extract/http.py
-One shared `http_get` for both APIs. Honest User-Agent, 30 s timeout, retries with waits of 2, 4, 8 s for timeouts, connection errors, HTTP 429 and 5xx (it obeys `Retry-After`). Other HTTP errors (400, 404) stop immediately with a clear message because retrying cannot fix them. This file is not in the CLAUDE.md layout; it exists so the retry logic is written once.
+One shared `http_get` for both APIs. Honest User-Agent, 30 s timeout, retries with waits of 2, 4, 8 s for timeouts, connection errors, HTTP 429 and 5xx (it obeys `Retry-After`). Other HTTP errors (400, 404) stop immediately with a clear message because retrying cannot fix them. This file is not in the project brief layout; it exists so the retry logic is written once.
 
 ### src/extract/nager.py
 One call per year 2016 to 2018. Each response is saved byte-for-byte and gets a manifest line. An empty or non-JSON answer is an error. No filtering here: dropping the Sao Paulo state holiday happens in staging.
@@ -111,7 +111,7 @@ remove them -> build the `stg_` tables (every join checked) -> test 14 -> write 
 
 ### src/transform/geo.py
 - `haversine_km`: the great-circle distance formula in plain Python (earth radius 6,371 km). Tested against 1 degree of longitude on the equator (111.2 km) and Sao Paulo to Rio (about 358 km).
-- `in_brazil`: the bounding-box check from CLAUDE.md. `zip_centroids`: groups geolocation to one row per zip prefix (mean lat/lng, plus `n_points`).
+- `in_brazil`: the bounding-box check from the project brief. `zip_centroids`: groups geolocation to one row per zip prefix (mean lat/lng, plus `n_points`).
 **Why:** the geolocation file has about 1M rows but only 19k zip prefixes. Joining on it raw would multiply every order item by the number of points in its zip.
 
 ### src/transform/rules.py
@@ -138,7 +138,7 @@ Every test writes a row to `dq_results` (appended each run: test, severity, rows
 - `stage_*` functions: one per table. Examples: customers/sellers get cleaned text, region and zip-centroid coordinates; products get the English category (typo columns fixed); reviews are reduced to one per order, the older ones quarantined; holidays keep national ones only; orders get BR1/BR2 flags; order items get BR3/BR4 columns.
 - `write_table` replaces a table (DROP, CREATE, INSERT). All tables are written in **one transaction**, so a failed run leaves the previous tables untouched.
 - `reconcile`: for each source, rows extracted must equal rows staged plus rows quarantined, read back from the tables just written. Out-of-scope orders are *inside* staged (kept with `in_scope = 0`), and the report shows how many. Geolocation counts the points averaged into each centroid (`n_points`).
-**If asked "why quarantine duplicate reviews instead of just dropping them?"** Rule 6 in CLAUDE.md: nothing disappears without a reason, and it keeps the reconciliation exact (99,224 = 98,665 + 559).
+**If asked "why quarantine duplicate reviews instead of just dropping them?"** Rule 6 of the project brief: nothing disappears without a reason, and it keeps the reconciliation exact (99,224 = 98,665 + 559).
 
 ### Tests
 `test_geo_rules.py` (rules and haversine), `test_quality.py` (every stop test aborts, quarantine keeps reason and raw row, merged reasons, warn does not stop, test 14, quarantine tables), `test_staging.py` (end to end on 4 invented orders: counts, flags, centroids, categories, reviews, holidays, running twice gives identical tables, a stop test leaves the old tables, joins that would multiply rows stop the run, reconciliation catches a silent drop).

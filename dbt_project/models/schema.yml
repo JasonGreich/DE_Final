@@ -1,5 +1,5 @@
 version: 2
-# Tests on the marts. Severity follows CLAUDE.md: keys and relationships stop the run (error),
+# Tests on the marts. Severity follows the project brief: keys and relationships stop the run (error),
 # status values only warn.
 models:
   - name: dim_date

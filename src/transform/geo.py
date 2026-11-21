@@ -11,7 +11,7 @@ import pandas as pd
 
 EARTH_RADIUS_KM = 6371.0  # mean radius of the Earth
 
-# Brazil bounding box from CLAUDE.md (BR4). A point outside it is bad data.
+# Brazil bounding box from the project brief (BR4). A point outside it is bad data.
 LAT_MIN, LAT_MAX = -34.0, 5.3
 LNG_MIN, LNG_MAX = -74.0, -34.0
 

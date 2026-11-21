@@ -190,7 +190,7 @@ Duplicate key (order_id, payment_sequential): **0** surplus rows
 | 3 | 8,179 |
 | 2 | 3,151 |
 
-## Quirks listed in CLAUDE.md
+## Quirks listed in the project brief
 
 ### Quirk: product categories
 

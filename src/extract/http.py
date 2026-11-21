@@ -1,6 +1,6 @@
 """One polite HTTP GET used by both API extractors.
 
-Rules from CLAUDE.md: honest User-Agent, a timeout on every request, retries with
+Rules from the project brief: honest User-Agent, a timeout on every request, retries with
 growing waits (backoff), and clear handling of HTTP errors and rate limits.
 """
 import time

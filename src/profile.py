@@ -22,7 +22,7 @@ REPORT_PATH = ROOT / "docs" / "profiling.md"
 RAW_DIR = ROOT / "data" / "raw" / "profiling"
 USER_AGENT = "DSC620-olist-student-project/0.1 (university coursework)"
 
-# Brazil bounding box from CLAUDE.md (business rule BR4)
+# Brazil bounding box from the project brief (business rule BR4)
 LAT_MIN, LAT_MAX, LNG_MIN, LNG_MAX = -34.0, 5.3, -74.0, -34.0
 
 # Columns that hold dates (stored as strings in Olist)
@@ -117,7 +117,7 @@ def profile_status_counts(conn):
         table([col, "rows"], [(v, f"{n:,}") for v, n in rows])
 
 
-# ---------------------------------------------------------------- quirks from CLAUDE.md
+# ---------------------------------------------------------------- quirks from the project brief
 
 def quirks_products(conn):
     """Missing category, missing translation, typo column names."""

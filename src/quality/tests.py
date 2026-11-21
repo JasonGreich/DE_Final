@@ -1,4 +1,4 @@
-"""The 15 data tests from CLAUDE.md, each with a severity.
+"""The 15 data tests from the project brief, each with a severity.
 
   stop       = abort the run (StopRun is raised)
   quarantine = move the failing rows to a quarantine table with a reason, continue

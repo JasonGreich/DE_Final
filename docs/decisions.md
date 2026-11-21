@@ -21,18 +21,18 @@ A throwaway dbt project (not in the repo) on a SQLite file holding a 5,000-order
 | Test with `severity: error` that fails | reported as `FAIL 1`, **exit code 1** (so `run_pipeline.py` can stop on it) |
 | Re-running `dbt build` | same row count (5,000) and same checksum of the mart table |
 
-### Caveats the humans should know
+### Caveats
 - **dbt-sqlite is community-maintained**, not by dbt Labs. It worked for everything we need, but it is the weaker link.
 - **SQLite has no real schemas.** dbt-sqlite maps a schema name to a separate database file. We use a single schema (`main`) so the
-  staging tables and the marts live in the same `warehouse.db`, which is what CLAUDE.md wants (name prefixes `stg_`, `dim_`, `fact_`).
+  staging tables and the marts live in the same `warehouse.db`, which is what the project brief asks for (name prefixes `stg_`, `dim_`, `fact_`).
 - **Install:** `pip install dbt-core dbt-sqlite` with no versions hung for 10+ minutes on Python 3.13 (stuck building a dependency).
   Installing `dbt-sqlite` alone resolved in about two minutes. `requirements.txt` pins the working pair.
 - dbt prints "your version of dbt-core is out of date"; this is harmless.
 - The spike did not test: very large tables (the real fact table is about 112,000 rows, small), custom generic tests written as macros
-  (stage 4), or the quarantine step. Quarantine stays in Python (stage 3) as CLAUDE.md allows.
+  (stage 4), or the quarantine step. Quarantine stays in Python (stage 3), which the project brief allows.
 
 ### Decision
-Stay on SQLite + dbt-sqlite. If stage 4 hits a real blocker, we stop and tell the humans before touching DuckDB.
+Stay on SQLite + dbt-sqlite. If stage 4 hits a real blocker, we stop and discuss it as a team before touching DuckDB.
 (For reference, the DuckDB change would be: `dbt-duckdb` instead of `dbt-sqlite`, warehouse file `warehouse.duckdb`, `julianday(a)-julianday(b)`
 becomes `date_diff('day', b, a)`, and the pandas load code would write to DuckDB.)
 
